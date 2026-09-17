@@ -68,6 +68,8 @@ module alchitry_top (
         if (dir_edge.out)
             dir.d = ~dir.q
 
+        free_ctr.d = free_ctr.q + 1 // keep the free-running counter running
+
         // pick a bit out of the free-running counter based on the speed level;
         // a higher speed picks a faster toggling (lower) bit
         idx = 26 - speed.q
