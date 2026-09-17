@@ -25,9 +25,9 @@ module alchitry_top (
         edge_detector down_edge(#RISE(1), #FALL(0))
         edge_detector dir_edge(#RISE(1), #FALL(0))
 
-        button_conditioner btn_up
-        button_conditioner btn_down
-        button_conditioner btn_dir
+        button_conditioner btn_up(#CLK_FREQ(100000000))
+        button_conditioner btn_down(#CLK_FREQ(100000000))
+        button_conditioner btn_dir(#CLK_FREQ(100000000))
 
         .rst(rst) {
             dff free_ctr[27]        // free-running counter, taps of it set the chase speed
