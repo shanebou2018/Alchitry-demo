@@ -19,26 +19,8 @@
             },
             {
                 "file": {
-                    "type": "DiskFile",
-                    "path": "source/decimal_counter.luc"
-                }
-            },
-            {
-                "file": {
-                    "type": "DiskFile",
-                    "path": "source/multi_decimal_counter.luc"
-                }
-            },
-            {
-                "file": {
-                    "type": "DiskFile",
-                    "path": "source/multi_seven_seg.luc"
-                }
-            },
-            {
-                "file": {
                     "type": "Component",
-                    "path": "Miscellaneous/counter.luc"
+                    "path": "Conditioning/button_conditioner.luc"
                 }
             },
             {

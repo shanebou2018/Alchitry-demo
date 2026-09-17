@@ -5,14 +5,14 @@ board with an [Alchitry Io](https://alchitry.com/boards/io/) element board plugg
 
 ## What it does
 
-- The 5 buttons on the Io board are wired straight to the 5 lower bits of the
-  Cu's onboard LEDs.
-- The 24 DIP switches on the Io board are wired straight to the 24 LEDs on the
-  Io board (organized as 3 groups of 8).
-- The 4 seven-segment displays on the Io board show a free-running decimal
-  counter (0000-9999) that increments about once a second, demonstrating a
-  multiplexed 7-segment driver and a chained BCD counter.
-- The USB serial RX/TX pins are looped back together.
+A single lit LED bounces back and forth across the Io board's 24 LEDs
+(Knight Rider style):
+
+- **Button 0** speeds the chase up.
+- **Button 1** slows the chase down.
+- **Button 2** reverses its direction.
+- The current speed level (0-7) is shown on the first 7-segment digit.
+- The onboard Cu LEDs mirror the raw button states.
 
 ## Opening the project
 
@@ -27,21 +27,21 @@ board with an [Alchitry Io](https://alchitry.com/boards/io/) element board plugg
 ## Project layout
 
 ```
-Alchitry Cu IO Demo.alp        - project file (board: Alchitry Cu)
-source/alchitry_top.luc        - top-level module, wires everything together
-source/multi_seven_seg.luc     - drives the 4-digit multiplexed 7-segment display
-source/seven_seg.luc           - binary-to-7-segment decoder for a single digit
-source/multi_decimal_counter.luc - chains multiple decimal_counter digits together
-source/decimal_counter.luc     - single-digit (0-9) counter with overflow
+Alchitry Cu IO Demo.alp   - project file (board: Alchitry Cu)
+source/alchitry_top.luc   - top-level module: chase logic, button handling, display
+source/seven_seg.luc      - binary-to-7-segment decoder for the speed digit
 ```
 
 The project also references a few standard components that ship with
-Alchitry Labs itself (`reset_conditioner`, `counter`, `decoder`,
+Alchitry Labs itself (`reset_conditioner`, `button_conditioner`, `decoder`,
 `edge_detector`, and the `alchitry`/`io_v1` pin constraint files), so no extra
 setup is required beyond having Alchitry Labs V2 installed.
 
 ## Customizing
 
-Try changing what drives `io_led`/`led` in `source/alchitry_top.luc`, or
-adjust the `DIV` value passed to `counter ctr` to speed up or slow down the
-seven-segment counter.
+- Change the `idx = 26 - speed.q` line in `source/alchitry_top.luc` to shift
+  the overall speed range faster or slower.
+- Widen `chase_bus` handling to light more than one LED at once for a
+  "comet tail" effect.
+- Wire up `io_button[3]`/`io_button[4]` (currently unused) for more controls,
+  like a reset-to-center button.
