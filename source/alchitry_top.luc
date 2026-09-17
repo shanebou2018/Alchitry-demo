@@ -1,0 +1,105 @@
+module alchitry_top (
+    input clk,              // 100MHz clock
+    input rst_n,            // reset button (active low)
+    output led[8],          // 8 user controllable LEDs
+    input usb_rx,           // USB->Serial input
+    output usb_tx,          // USB->Serial output
+    output io_led[3][8],    // LEDs on IO Shield
+    output io_segment[8],   // 7-segment LEDs on IO Shield
+    output io_select[4],    // Digit select on IO Shield
+    input io_button[5],     // 5 buttons on IO Shield
+    input io_dip[3][8]      // DIP switches on IO Shield
+) {
+
+    sig rst              // reset signal
+    sig idx[5]            // bit tapped from the free-running counter, sets the chase speed
+    sig step               // one-cycle pulse that advances the chase by one LED
+    sig chase_bus[24]       // flattened one-hot chase position
+
+    .clk(clk) {
+        // The reset conditioner is used to synchronize the reset signal to the FPGA
+        // clock. This ensures the entire FPGA comes out of reset at the same time.
+        reset_conditioner reset_cond
+
+        edge_detector up_edge(#RISE(1), #FALL(0))
+        edge_detector down_edge(#RISE(1), #FALL(0))
+        edge_detector dir_edge(#RISE(1), #FALL(0))
+
+        button_conditioner btn_up(#CLK_FREQ(100000000))
+        button_conditioner btn_down(#CLK_FREQ(100000000))
+        button_conditioner btn_dir(#CLK_FREQ(100000000))
+
+        .rst(rst) {
+            dff free_ctr[27]        // free-running counter, taps of it set the chase speed
+            dff tap_prev              // previous value of the tapped bit, for edge detection
+            dff speed[3](#INIT(3))     // chase speed level: 0 (slow) to 7 (fast)
+            dff pos[5]                   // current lit LED position: 0 to 23
+            dff dir                        // 0 = moving up the strip, 1 = moving down
+        }
+    }
+
+    decoder pos_dec(#WIDTH(5)) // turns pos into a one-hot vector
+    seven_seg speed_seg          // shows the current speed level
+
+    always {
+        reset_cond.in = ~rst_n  // input raw inverted reset signal
+        rst = reset_cond.out    // conditioned reset
+
+        led = c{3b0, io_button} // raw button state on the onboard LEDs
+
+        usb_tx = usb_rx         // loop serial port
+
+        // debounce the buttons and turn presses into single-cycle pulses
+        btn_up.in = io_button[0]
+        btn_down.in = io_button[1]
+        btn_dir.in = io_button[2]
+
+        up_edge.in = btn_up.out
+        down_edge.in = btn_down.out
+        dir_edge.in = btn_dir.out
+
+        // button 0 speeds the chase up, button 1 slows it down
+        if (up_edge.out && speed.q != 7)
+            speed.d = speed.q + 1
+        if (down_edge.out && speed.q != 0)
+            speed.d = speed.q - 1
+
+        // button 2 reverses the direction of travel
+        if (dir_edge.out)
+            dir.d = ~dir.q
+
+        free_ctr.d = free_ctr.q + 1 // keep the free-running counter running
+
+        // pick a bit out of the free-running counter based on the speed level;
+        // a higher speed picks a faster toggling (lower) bit
+        idx = 26 - speed.q
+        tap_prev.d = free_ctr.q[idx]
+        step = free_ctr.q[idx] && !tap_prev.q // rising edge on the tapped bit
+
+        // advance the lit LED, bouncing off both ends of the strip
+        if (step) {
+            if (dir.q == 0) {
+                if (pos.q == 23)
+                    dir.d = 1
+                else
+                    pos.d = pos.q + 1
+            } else {
+                if (pos.q == 0)
+                    dir.d = 0
+                else
+                    pos.d = pos.q - 1
+            }
+        }
+
+        pos_dec.in = pos.q
+        chase_bus = pos_dec.out[23:0]
+
+        io_led[0] = chase_bus[7:0]   // connect the chase to the Io LEDs
+        io_led[1] = chase_bus[15:8]
+        io_led[2] = chase_bus[23:16]
+
+        speed_seg.char = c{1b0, speed.q}
+        io_segment = ~speed_seg.segs // connect segments to the driver
+        io_select = ~4b0001          // light only the first digit
+    }
+}
