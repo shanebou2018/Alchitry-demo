@@ -25,11 +25,11 @@ module alchitry_top (
         edge_detector down_edge(#RISE(1), #FALL(0))
         edge_detector dir_edge(#RISE(1), #FALL(0))
 
-        .rst(rst) {
-            button_conditioner btn_up
-            button_conditioner btn_down
-            button_conditioner btn_dir
+        button_conditioner btn_up
+        button_conditioner btn_down
+        button_conditioner btn_dir
 
+        .rst(rst) {
             dff free_ctr[27]        // free-running counter, taps of it set the chase speed
             dff tap_prev              // previous value of the tapped bit, for edge detection
             dff speed[3](#INIT(3))     // chase speed level: 0 (slow) to 7 (fast)
